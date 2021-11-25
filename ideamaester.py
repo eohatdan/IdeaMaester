@@ -32,21 +32,29 @@ def initProjectsHistory():
 
 
 
-def saveProjects(pd,pdName): # Save Projects dictionary
+def saveProjects(pd,pdName): # Save Projects dictionary/history
         # Store data (serialize)
         import pickle
+        empty_list = []
         pickle.HIGHEST_PROTOCOL = 4
+        
         if pdName == 'projects_dict' :
-               with open('c:/Users/Dan/projects_dict_04.pickle', 'wb') as handle:
-                   pickle.dump(pd, handle, protocol=pickle.HIGHEST_PROTOCOL)
-               tprint('At line: ' + str(inspect.getframeinfo(inspect.currentframe()). lineno))
-
-               dprint('Saving projects_dict')
+            filename = './projects_dict_04.pickle'
+            try:
+                   with open(filename, 'wb') as handle:
+                       pickle.dump(pd, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                   tprint('At line: ' + str(inspect.getframeinfo(inspect.currentframe()). lineno))
+            except:  # if dict not already saved.
+                openfile = open(filename,'wb')
+                pickle.dump(empty_list,openfile)
+            dprint('Saving projects_dict')
+            
         elif pdName == 'projects_hist' :
+               filename = './projects_hist_04.pickle'
                tprint('At line: ' + str(inspect.getframeinfo(inspect.currentframe()). lineno))
 
                dprint('Saving projects_hist')
-               with open('c:/Users/Dan/projects_hist_04.pickle', 'wb') as handle:
+               with open(filename, 'wb') as handle:
                     pickle.dump(pd, handle, protocol=pickle.HIGHEST_PROTOCOL)
                
         else: print('Unable to save ',pdName)
@@ -56,15 +64,56 @@ def restoreProjects(pd,pdName):
        # Restore serialized data
         import pickle
         pickle.HIGHEST_PROTOCOL = 4
+        
         if pdName == 'projects_dict' :
-               dprint('Restoring projects_dict')
-               with open('c:/Users/Dan/projects_dict_04.pickle', 'rb') as handle:
-                   return(pickle.load(handle))
+            filename = './projects_dict_04.pickle'
+            dprint('Restoring projects_dict')
+            try:
+                   with open(filename, 'rb') as handle:
+                       return(pickle.load(handle))
+            except:
+                    # Need to create a new projects dictionary file and initialize it.
+                    
+                    tprint('No dict file found.')
+                    empty_dict = {'root' : 'start'}
+                    
+                    tprint('Filename = ' + filename)
+                    newfile = open(filename,'x') # Creates a new file
+                    newfile.close()
+                    # Initialize the file with a dummy entry.
+                    with open(filename,'wb') as handle:
+                        pickle.dump(empty_dict,handle,protocol=pickle.HIGHEST_PROTOCOL)
+                    handle.close()
+                    tprint('New dict file created.')
+                    # Return the newly initialized projects dictionary
+                    with open(filename, 'rb') as handle:
+                       return(pickle.load(handle))
+                    
         if pdName == 'projects_hist' :
+            
+               filename = './projects_hist_04.pickle'
                dprint('Restoring projects_hist')
-               with open('c:/Users/Dan/projects_hist_04.pickle', 'rb') as handle:
-                   return(pickle.load(handle))
-              
+               try:
+                   with open(filename, 'rb') as handle:
+                       return(pickle.load(handle))
+               except:
+                    # Need to create a new projects history file and initialize it.
+                    
+                    tprint('No hist file found.')
+                    empty_dict = {'root' : 'start'}
+                    
+                    tprint('Filename = ' + filename)
+                    newfile = open(filename,'x') # Creates a new file
+                    newfile.close()
+                    # Initialize the file with a dummy entry.
+                    with open(filename,'wb') as handle:
+                        pickle.dump(empty_dict,handle,protocol=pickle.HIGHEST_PROTOCOL)
+                    handle.close()
+                    tprint('New dict file created.')
+                    # Return the newly initialized projects history
+                    with open(filename, 'rb') as handle:
+                       return(pickle.load(handle))
+                    
 def addToProjectsHistory(pd,key,desc,next_todo):
     key = key.strip(' ')
     tprint('At line: ' + str(inspect.getframeinfo(inspect.currentframe()). lineno))
@@ -96,10 +145,17 @@ def createProjectsHistory(pd):
 def ProjectsChooser(pd): # Choose a project to work on based on random number whose range is the length of the dictionary.
        
         import random
-        r = random.randint(1,len(pd)-1)
-        projects_list = createProjectsList(pd)
-        key = projects_list[r] # The integer, r, returns just the key of dictionary
-        print(key,':',pd[key][0],'\nNext task:',pd[key][1])
+        pdlen = len(pd)
+        tprint("Dictionary Length: "+str(pdlen))
+        if pdlen >1 :
+            r = random.randint(1,pdlen-1)
+            projects_list = createProjectsList(pd)
+            key = projects_list[r] # The integer, r, returns just the key of dictionary
+            print(key,':',pd[key][0],'\nNext task:',pd[key][1])
+            return()
+        else:
+            dprint("Length of dict <= 0; Cannot suggest idea to work on.")
+        return()
 
 def ShowProjectsHistory(pd):  # Print the list of completed tasks.
        # projects_history = createProjectsHistory(pd)
@@ -224,9 +280,12 @@ def getArgs(adict): # -s: show history; -a: add to-do; -d: delete project -h: he
        if (myAction == '-s'): # show_history is set to True if -s is entered on the command prompt
               # Add code here to show projects_hist
               tprint('At line: ' + str(inspect.getframeinfo(inspect.currentframe()). lineno))
+              print('Ideas/Project history/notes: \n')
               listProjects(projects_hist)
+              return('s')
               
        if (myAction == '-l'):  # list all pending todo's
+              print('Ideas/Projects: \n ')
               listProjects(projects_dict)
               return('l')
 
@@ -273,7 +332,7 @@ def getArgs(adict): # -s: show history; -a: add to-do; -d: delete project -h: he
 if (__name__ == '__main__'): #Note: this keeps the module from executing if imported
        import inspect
        debug = setDebug(False)  # Global variable controlling dprint
-       trace = setTrace(False)   # Glogal variable controlling tprint
+       trace = setTrace(True)   # Glogal variable controlling tprint
        # Create global variables to capture GUI inputs
        myAction = '';myProject = '';myDesc = '';myToDo = ''
        projects_dict = initProjectsDictionary() # Define and initialze the projects dictionary.
